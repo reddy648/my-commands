@@ -1,0 +1,4 @@
+DIR.ENUMARATION:
+
+gobuster dir -u http://TARGET I.P/ -w '/usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt'
+
